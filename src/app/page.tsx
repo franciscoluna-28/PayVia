@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,29 +24,27 @@ import {
 export default function Home() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-const [invoice, setInvoice] = useState({
-  logo: "LOGO",
-  fullName: "Your Name",
-  role: "Backend Developer", 
-  billToCompany: "Client Company Name",
-  billToAddress: "Client Address",
-  billToZip: "Postal Code",
-  invoiceNumber: "INV-0001",
-  invoiceDate: "2025-11-25",
-  dueDate: "2025-12-10",
-  items: [
-    { description: "Consulting services", quantity: 1, amount: 200 },
-    { description: "Cloud infrastructure setup", quantity: 1, amount: 200 },
-  ],
-  taxRate: 12,
-  notes:
-    "Payment is due within 15 days of the invoice date. Please include the invoice number in your payment reference. Thank you for your business.",
-  payVia: "Bank Transfer", 
-  accountName: "Account Holder Name",
-  accountEmail: "billing@example.com",
-});
-
-
+  const [invoice, setInvoice] = useState({
+    logo: "LOGO",
+    fullName: "Your Name",
+    role: "Backend Developer",
+    billToCompany: "Client Company Name",
+    billToAddress: "Client Address",
+    billToZip: "Postal Code",
+    invoiceNumber: "INV-0001",
+    invoiceDate: "2025-11-25",
+    dueDate: "2025-12-10",
+    items: [
+      { description: "Consulting services", quantity: 1, amount: 200 },
+      { description: "Cloud infrastructure setup", quantity: 1, amount: 200 },
+    ],
+    taxRate: 12,
+    notes:
+      "Payment is due within 15 days of the invoice date. Please include the invoice number in your payment reference. Thank you for your business.",
+    payVia: "Bank Transfer",
+    accountName: "Account Holder Name",
+    accountEmail: "billing@example.com",
+  });
 
   const updateField = (field: string, value: string | number) => {
     setInvoice((prev) => ({ ...prev, [field]: value }));
@@ -111,15 +109,37 @@ const [invoice, setInvoice] = useState({
     }
   };
 
+{
+  const [isPending, startTransition] = useTransition();
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const generatePdf = async () => {
+    try {
+      await generatePDF("invoice");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+    }
+  };
+
+  const formAction = () => {
+    startTransition(async () => {
+      setAiLoading(true);
+      await generatePdf();
+      setAiLoading(false);
+    });
+  };
+
+
   return (
     <main className="max-w-[1500px] flex justify-center m-auto p-4 font-sans text-gray-800">
       <Button
-        className="fixed top-4 right-4 z-10"
-        onClick={() => generatePDF("invoice")}
+        className="fixed top-4 right-4 z-10 w-[200px]"
+        disabled={isPending}
+        onClick={() => formAction()}
       >
-        Generate PDF
+        {isPending ? "Generating PDF..." : "Download PDF"}
       </Button>
-      <div className="fixed top-4 left-4 z-10 w-[360px]">
+      {/* <div className="fixed top-4 left-4 z-10 w-[360px]">
         <div className="bg-white p-3 rounded-md shadow-sm border border-gray-200">
           <div className="text-sm font-semibold mb-2">AI Assistant</div>
           <textarea
@@ -135,7 +155,7 @@ const [invoice, setInvoice] = useState({
             <Button variant="ghost" onClick={() => setAiPrompt("")}>Clear</Button>
           </div>
         </div>
-      </div>
+      </div> */}
       <div
         id="invoice"
         className="w-full max-w-[800px] border border-gray-300 p-8 space-y-8 shadow-sm bg-white rounded-md"
@@ -314,11 +334,7 @@ const [invoice, setInvoice] = useState({
 
             <Popover>
               <PopoverTrigger asChild>
-                <Button
-                  variant="invisible"
-                  className="flex w-full justify-between items-center rounded-md px-3 py-2 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300"
-                  aria-label="Edit tax rate"
-                >
+                <Button variant="invisible">
                   <Label className="text-gray-600 font-medium">
                     Tax Rate
                     {`${
@@ -338,6 +354,7 @@ const [invoice, setInvoice] = useState({
                   <Label className="text-gray-600">Tax rate (%)</Label>
                   <Input
                     type="number"
+                    max={"100"}
                     inputMode="decimal"
                     value={invoice.taxRate === null ? "" : invoice.taxRate}
                     onChange={(e) => {
@@ -371,8 +388,12 @@ const [invoice, setInvoice] = useState({
             suppressContentEditableWarning
             onChange={(e) => updateField("notes", e.currentTarget.textContent)}
             style={{ backgroundColor: "transparent", color: "inherit" }}
-            onMouseOver={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-            onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+            onMouseOver={(e) =>
+              (e.currentTarget.style.backgroundColor = "transparent")
+            }
+            onMouseOut={(e) =>
+              (e.currentTarget.style.backgroundColor = "transparent")
+            }
           >
             {invoice.notes}
           </div>
@@ -412,4 +433,6 @@ const [invoice, setInvoice] = useState({
       </div>
     </main>
   );
+}
+
 }
