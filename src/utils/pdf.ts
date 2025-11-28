@@ -7,24 +7,32 @@ type GeneratePdfOptions = {
   pdfPaddingMm?: number;
 };
 
-export const generatePDF = async ({
+/**
+ * Generates a PDF from a DOM element using snapdom (HTML to Canvas) and jsPDF (Canvas to PDF).
+ * @param elementToPrintId The ID of the HTML element to capture.
+ * @param fileName The name of the file to be downloaded.
+ * @param pdfPaddingMm Padding around the image inside the PDF in millimeters.
+ */
+export const generatePdf = async ({
   elementToPrintId,
   fileName,
   pdfPaddingMm = 10,
 }: GeneratePdfOptions) => {
   const element = document.getElementById(elementToPrintId);
+
   if (!element) {
     throw new Error(`Element with id ${elementToPrintId} not found`);
   }
 
   const originalOverflow = element.style.overflow;
-  element.style.overflow = "hidden";
+  element.style.overflow = "hidden"; // Prevent scrollbars from being captured
 
   let dataURL: string;
 
   try {
     const snapdomResult = await snapdom(element, {
       scale: 2,
+      embedFonts: true,
     });
     const canvas = await snapdomResult.toCanvas();
     dataURL = canvas.toDataURL("image/png");
@@ -32,7 +40,7 @@ export const generatePDF = async ({
     const pdf = new jsPDF({
       orientation: "p",
       unit: "mm",
-      format: [210, 297], // A4
+      format: [210, 297], // A4 standard size
       compress: true,
     });
 
@@ -54,7 +62,6 @@ export const generatePDF = async ({
     pdf.addImage(dataURL, "PNG", x, y, imgWidth, imgHeight);
     pdf.save(fileName);
   } catch (error) {
-    console.error("PDF Generation Error:", error);
     throw error;
   } finally {
     element.style.overflow = originalOverflow;

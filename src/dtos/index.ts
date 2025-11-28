@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 const nonEmptyString = z.string().trim().min(1, "Required");
+const uuidString = z.uuid();
 const positiveInt = z.number().int().positive();
 const currencyAmount = z.number().nonnegative();
 const isoDateString = z
@@ -9,16 +10,17 @@ const isoDateString = z
     (s) => /^\d{4}-\d{2}-\d{2}$/.test(s),
     "Must be an ISO date string (YYYY-MM-DD)"
   );
+const nullableString = z.string().nullable();
 
-export const InvoiceItemSchema = z.object({
+export const InvoiceItemCreationSchema = z.object({
   description: nonEmptyString,
   quantity: positiveInt,
   amount: currencyAmount,
 });
 
-export const InvoiceSchema = z
+export const InvoiceCreationSchema = z
   .object({
-    logo: nonEmptyString,
+    logo: nullableString,
     fullName: nonEmptyString,
     role: nonEmptyString,
     billToCompany: nonEmptyString,
@@ -27,7 +29,9 @@ export const InvoiceSchema = z
     invoiceNumber: nonEmptyString,
     invoiceDate: isoDateString,
     dueDate: isoDateString,
-    items: z.array(InvoiceItemSchema).min(1, "At least one item is required"),
+    items: z
+      .array(InvoiceItemCreationSchema)
+      .min(1, "At least one item is required"),
     taxRate: z.number().min(0).max(100),
     notes: z.string().trim().optional(),
     payVia: nonEmptyString,
@@ -46,5 +50,6 @@ export const InvoiceSchema = z
     }
   });
 
-export type InvoiceItem = z.infer<typeof InvoiceItemSchema>;
-export type Invoice = z.infer<typeof InvoiceSchema>;
+export const InvoiceItemEntitySchema = InvoiceCreationSchema.extend({
+  id: z.uuid(),
+});
