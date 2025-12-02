@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 const nonEmptyString = z.string().trim().min(1, "Required");
-const uuidString = z.uuid();
 const positiveInt = z.number().int().positive();
 const currencyAmount = z.number().nonnegative();
 const isoDateString = z
@@ -22,6 +21,7 @@ export const InvoiceCreationSchema = z
   .object({
     logo: nullableString,
     fullName: nonEmptyString,
+    clientId: z.uuid().optional(),
     role: nonEmptyString,
     billToCompany: nonEmptyString,
     billToAddress: nonEmptyString,
@@ -51,5 +51,15 @@ export const InvoiceCreationSchema = z
   });
 
 export const InvoiceItemEntitySchema = InvoiceCreationSchema.extend({
+  id: z.uuid(),
+});
+
+export const ClientCreationSchema = z.object({
+  fullName: nonEmptyString,
+  address: nonEmptyString,
+  zip: nonEmptyString,
+});
+
+export const ClientEntitySchema = ClientCreationSchema.extend({
   id: z.uuid(),
 });

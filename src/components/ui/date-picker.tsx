@@ -28,12 +28,16 @@ export function DatePicker({
     setDate(value || null);
   }, [value]);
 
-  const handleDateSelect = (selectedDate: Date | undefined) => {
-    if (selectedDate) {
-      setDate(selectedDate);
-      onChange?.(selectedDate);
-      setOpen(false);
-    }
+  const handleSelect = (selectedDay: Date) => {
+    if (!selectedDay) return;
+
+    const fixed = new Date(
+      selectedDay.getFullYear(),
+      selectedDay.getMonth(),
+      selectedDay.getDate()
+    );
+    onChange?.(fixed);
+    setOpen(false);
   };
 
   return (
@@ -43,7 +47,12 @@ export function DatePicker({
           className={cn(`cursor-pointer`, buttonClassName)}
           variant="outline"
         >
-          {date ? date.toLocaleDateString() : "Select date"}{" "}
+          {date ? (
+            <time>{date.toLocaleDateString()}</time>
+          ) : (
+            <span>Pick a date</span>
+          )}
+
           <ChevronDownIcon className="size-4 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -52,7 +61,8 @@ export function DatePicker({
           mode="single"
           selected={date || undefined}
           captionLayout="dropdown"
-          onSelect={handleDateSelect}
+          onSelect={handleSelect}
+          required
         />
       </PopoverContent>
     </Popover>
