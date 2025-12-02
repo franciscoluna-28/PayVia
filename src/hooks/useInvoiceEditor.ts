@@ -1,4 +1,4 @@
-import { useInvoiceStore } from "@/store";
+import { useInvoiceStore } from "@/store/InvoiceStore";
 import { generatePdf } from "@/utils/pdf";
 import { useTransition } from "react";
 
