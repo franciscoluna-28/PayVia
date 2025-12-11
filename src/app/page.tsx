@@ -24,7 +24,7 @@ export default function Home() {
     clearInvoice,
   } = useInvoiceActions();
 
-  const hydrated = useInvoiceHydration();
+  const isInvoiceLoading = useInvoiceHydration();
 
   return (
     <main className="max-w-[1500px] flex justify-center m-auto p-4">
@@ -36,17 +36,24 @@ export default function Home() {
           />
         }
         downloadInvoiceAsPdfSlot={
-          <Button variant="ghost" onClick={downloadInvoiceAsPdf} disabled={isPendingPdf}>
-          <FileDownIcon className="mr-2 h-4 w-4" /> <span>Download PDF</span> 
+          <Button
+            variant="ghost"
+            onClick={() =>
+              downloadInvoiceAsPdf()
+            }
+            disabled={isPendingPdf}
+          >
+            <FileDownIcon className="mr-2 h-4 w-4" /> <span>Download PDF</span>
           </Button>
         }
         clientsSlot={
-          <ClientManagerDialog/>  
+            <ClientManagerDialog />
         }
       />
 
       <InvoiceWrapper
-        isLoading={!hydrated}
+        mode={isPendingPdf ? "view" : "edit"}
+        isLoaded={!isInvoiceLoading}
         invoice={invoice}
         updateField={updateField}
         updateItem={updateItem}

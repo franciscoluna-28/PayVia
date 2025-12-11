@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { DatePicker } from "@/components/ui/date-picker";
 import {
   Field,
   FieldGroup,
@@ -23,7 +22,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { InvoiceStore } from "@/store/InvoiceStore";
-import { Invoice } from "@/types";
+import { ClientId, Invoice } from "@/types";
 import { generateInvoiceReferenceId } from "@/utils/uuid";
 import { Dice5Icon, Plus, Search, X } from "lucide-react";
 import { InvoiceCard } from "../InvoiceCard";
@@ -46,7 +45,8 @@ type Props = {
   subtotal: number;
   tax: number;
   total: number;
-  isLoading: boolean;
+  isLoaded: boolean;
+  mode: "view" | "edit";
 };
 
 export function InvoiceWrapper({
@@ -58,9 +58,145 @@ export function InvoiceWrapper({
   subtotal,
   tax,
   total,
-  isLoading,
+  isLoaded,
+  mode = "edit",
 }: Props) {
   const { clients } = useClientStore();
+
+  const EDIT_ONLY_COMPONENTS = {
+    generateInvoiceId:
+      mode === "edit" ? (
+        <Button
+          className="cursor-pointer"
+          variant="outline"
+          aria-label="Generate random invoice number"
+          onClick={() =>
+            updateField("invoiceNumber", generateInvoiceReferenceId())
+          }
+        >
+          <Dice5Icon />
+        </Button>
+      ) : null,
+
+    clientSelectorField: (handleClientSelect: (clientId: ClientId) => void) => {
+      return mode === "edit" ? (
+        <Field className="max-w-[300px]">
+          <FieldLabel>Select Client</FieldLabel>
+          <Select
+            onValueChange={handleClientSelect}
+            value={invoice.clientId ?? ""}
+          >
+            <SelectTrigger className="w-full">
+              <Search size={16} className="text-gray-400 mr-2" />
+              <SelectValue placeholder="Select a client or enter manually" />
+            </SelectTrigger>
+            <SelectContent>
+              {clients.map((client) => (
+                <SelectItem key={client.id} value={client.id}>
+                  {client.fullName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+      ) : null;
+    },
+
+    addPaymentItem: (addItem: () => void) => {
+      return mode === "edit" ? (
+        <Button
+          onClick={addItem}
+          variant="outline"
+          className="gap-2 bg-transparent"
+        >
+          <Plus size={18} />
+          Add Item
+        </Button>
+      ) : null;
+    },
+
+    removePaymentItem: (removeItem: (index: number) => void, index: number) => {
+      return mode === "edit" ? (
+        <TableCell className="text-left py-3">
+          <button
+            onClick={() => removeItem(index)}
+            className="text-gray-300 hover:text-red-500 transition-colors p-1"
+            aria-label="Delete item"
+          >
+            <X size={16} />
+          </button>
+        </TableCell>
+      ) : null;
+    },
+
+    taxItem: ({
+      invoice,
+      tax,
+      updateField,
+    }: {
+      invoice: Invoice;
+      tax: number;
+      updateField: InvoiceStore["updateField"];
+    }) => {
+      return mode === "edit" ? (
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              className="w-full flex justify-between items-center px-2 py-1"
+            >
+              <FieldLabel className="font-medium">
+                Tax Rate
+                {invoice.taxRate !== null ? ` (${invoice.taxRate}%)` : ""}
+              </FieldLabel>
+              <div className="text-sm font-medium text-gray-800">
+                {tax.toFixed(2)}
+              </div>
+            </Button>
+          </PopoverTrigger>
+
+          <PopoverContent
+            className="w-64 p-4 border rounded-md"
+            align="end"
+            side="bottom"
+          >
+            <FieldGroup>
+              <Field>
+                <FieldLabel>Tax rate (%)</FieldLabel>
+                <Input
+                  type="number"
+                  max="100"
+                  inputMode="decimal"
+                  value={invoice.taxRate ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    // Handle empty string or conversion to number
+                    updateField("taxRate", v === "" ? null : Number(v));
+                  }}
+                  placeholder="12"
+                  className="w-full text-right"
+                  autoFocus
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Computed tax:{" "}
+                  <span className="font-medium">{tax.toFixed(2)}</span>
+                </p>
+              </Field>
+            </FieldGroup>
+          </PopoverContent>
+        </Popover>
+      ) : (
+        <div className="w-full flex justify-between items-center px-2 py-1">
+          <FieldLabel className="font-medium">
+            Tax Rate {invoice.taxRate !== null ? ` (${invoice.taxRate}%)` : ""}
+          </FieldLabel>
+          <div className="text-sm font-medium text-gray-800">
+            {tax.toFixed(2)}
+          </div>
+        </div>
+      );
+    },
+  };
 
   const selectedClient = clients.find((c) => c.id === invoice.clientId);
 
@@ -85,14 +221,14 @@ export function InvoiceWrapper({
 
   return (
     <InvoiceCard className="min-h-screen">
-      {isLoading ? (
+      {isLoaded ? (
         <div>Loading...</div>
       ) : (
         <>
           <section className="grid grid-cols-2 gap-4 items-start pb-6 border-b border-dashed border-gray-300">
             <div className="flex flex-col gap-3 items-start">
               <div className="flex items-center gap-3">
-                <InvoiceImage invoice={invoice} updateField={updateField} />
+                <InvoiceImage mode={mode} logo={invoice.logo} updateField={updateField} />
               </div>
             </div>
 
@@ -119,26 +255,7 @@ export function InvoiceWrapper({
             </div>
           </section>
           <FieldLegend className="font-bold text-lg mb-2">Bill To</FieldLegend>
-          <Field className="max-w-[300px]">
-            <FieldLabel>Select Client</FieldLabel>
-            <Select
-              onValueChange={handleClientSelect}
-              value={invoice.clientId ?? ""}
-            >
-              <SelectTrigger className="w-full">
-                <Search size={16} className="text-gray-400 mr-2" />
-                <SelectValue placeholder="Select a client or enter manually" />
-              </SelectTrigger>
-              <SelectContent>
-                {clients.map((client) => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.fullName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-
+          {EDIT_ONLY_COMPONENTS.clientSelectorField(handleClientSelect)}
           <section className="grid grid-cols-2 gap-8 pt-4">
             <FieldGroup>
               <Field>
@@ -202,16 +319,7 @@ export function InvoiceWrapper({
                     }
                     placeholder="INV-0001"
                   />
-                  <Button
-                    className="cursor-pointer"
-                    variant="outline"
-                    aria-label="Generate random invoice number"
-                    onClick={() =>
-                      updateField("invoiceNumber", generateInvoiceReferenceId())
-                    }
-                  >
-                    <Dice5Icon />
-                  </Button>
+                  {EDIT_ONLY_COMPONENTS.generateInvoiceId}
                 </div>
               </Field>
 
@@ -292,28 +400,13 @@ export function InvoiceWrapper({
                         className="text-sm text-left"
                       />
                     </TableCell>
-                    <TableCell className="text-left py-3">
-                      <button
-                        onClick={() => removeItem(index)}
-                        className="text-gray-300 hover:text-red-500 transition-colors p-1"
-                        aria-label="Delete item"
-                      >
-                        <X size={16} />
-                      </button>
-                    </TableCell>
+                    {EDIT_ONLY_COMPONENTS.removePaymentItem(removeItem, index)}
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
             <div className="flex gap-2 pt-4">
-              <Button
-                onClick={addItem}
-                variant="outline"
-                className="gap-2 bg-transparent"
-              >
-                <Plus size={18} />
-                Add Item
-              </Button>
+              {EDIT_ONLY_COMPONENTS.addPaymentItem(addItem)}
             </div>
           </section>
           <section className="flex justify-end pt-4">
@@ -322,54 +415,13 @@ export function InvoiceWrapper({
                 <FieldLabel className="font-medium">Subtotal</FieldLabel>
                 <div className="text-sm font-medium">{subtotal.toFixed(2)}</div>
               </div>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="w-full flex justify-between items-center px-2 py-1"
-                  >
-                    <FieldLabel className="font-medium">
-                      Tax Rate
-                      {invoice.taxRate !== null ? ` (${invoice.taxRate}%)` : ""}
-                    </FieldLabel>
-                    <div className="text-sm font-medium text-gray-800">
-                      {tax.toFixed(2)}
-                    </div>
-                  </Button>
-                </PopoverTrigger>
-
-                <PopoverContent
-                  className="w-64 p-4 border rounded-md"
-                  align="end"
-                  side="bottom"
-                >
-                  <FieldGroup>
-                    <Field>
-                      <FieldLabel>Tax rate (%)</FieldLabel>
-                      <Input
-                        type="number"
-                        max="100"
-                        inputMode="decimal"
-                        value={invoice.taxRate ?? ""}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          // Handle empty string or conversion to number
-                          updateField("taxRate", v === "" ? null : Number(v));
-                        }}
-                        placeholder="12"
-                        className="w-full text-right"
-                        autoFocus
-                      />
-                      <p className="text-xs text-gray-500 mt-2">
-                        Computed tax:{" "}
-                        <span className="font-medium">{tax.toFixed(2)}</span>
-                      </p>
-                    </Field>
-                  </FieldGroup>
-                </PopoverContent>
-              </Popover>
+              {EDIT_ONLY_COMPONENTS.taxItem({
+                invoice,
+                tax,
+                updateField,
+              })}
               <div className="flex justify-between items-center border-t pt-3">
-                <div className="text-base font-semibold">Total ($)</div>
+                <div className="text-base font-semibold px-2">Total ($)</div>
                 <div className="text-base font-semibold">
                   {total.toFixed(2)}
                 </div>
