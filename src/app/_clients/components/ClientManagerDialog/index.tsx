@@ -104,7 +104,7 @@ export function ClientManagerDialog() {
 
         {!isFormOpen && (
           <div className="space-y-4">
-            <Button variant="outline" onClick={startAdd} className="w-full gap-2">
+            <Button variant="outline" onClick={startAdd} className="w-full gap-2">  
               <Plus size={16} /> New Client
             </Button>
 

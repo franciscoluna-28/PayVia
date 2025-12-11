@@ -3,18 +3,13 @@ import { Invoice } from "@/types";
 import { UploadIcon } from "lucide-react";
 
 type Props = {
-  logo: Invoice['logo'];
+  logo: Invoice['logo']
   updateField: InvoiceStore["updateField"];
-  mode: "edit" | "view";
 };
 
-export function InvoiceImage({ logo, updateField, mode }: Props) {
-  if (mode === "view" && !logo) {
-    return null; // Don't render anything in view mode if there's no logo
-  }
-
+export function InvoiceImage({ logo, updateField }: Props) {
   return (
-    <label className={`${mode === "view" ? "cursor-default" : "cursor-pointer"}`}>
+    <label className="cursor-pointer">
       <div className="w-28 h-28 rounded-md border border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
         {logo ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -30,20 +25,18 @@ export function InvoiceImage({ logo, updateField, mode }: Props) {
         )}
       </div>
 
-      {mode === "edit" && (
-        <input
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-              const logoUrl = URL.createObjectURL(file);
-              updateField("logo", logoUrl);
-            }
-          }}
-        />
-      )}
+      <input
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) {
+            const logoUrl = URL.createObjectURL(file);
+            updateField("logo", logoUrl);
+          }
+        }}
+      />
     </label>
   );
 }

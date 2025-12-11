@@ -228,7 +228,7 @@ export function InvoiceWrapper({
           <section className="grid grid-cols-2 gap-4 items-start pb-6 border-b border-dashed border-gray-300">
             <div className="flex flex-col gap-3 items-start">
               <div className="flex items-center gap-3">
-                <InvoiceImage mode={mode} logo={invoice.logo} updateField={updateField} />
+                <InvoiceImage logo={invoice.logo} updateField={updateField} />
               </div>
             </div>
 
